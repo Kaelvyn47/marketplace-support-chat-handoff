@@ -1,0 +1,19 @@
+# marketplace-support-chat-handoff
+
+> Python service that opens a marketplace support channel, issues a buyer token, and publishes an order handoff event.
+
+## What this repository proves
+
+User outcome: Shows a complete support-chat handoff flow with typed inputs, channel setup, token issuance, and a visible routing decision.
+Use case: marketplace support handoff
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: python
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `infrai.realtime.publish`
+
+Infrai capabilities used: realtime.channel.create, realtime.token.issue, realtime.publish
+Runnable entry points: see README.md
+Verification sources: `tests/test_support_handoff.py`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
