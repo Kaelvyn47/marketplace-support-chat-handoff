@@ -6,7 +6,7 @@ Run the service:
 uvicorn service:app --reload
 ```
 
-This example uses Infrai as plain REST from Python with a single `INFRAI_API_KEY`. The service models one marketplace workflow: a buyer opens support chat on a listing, the service decides whether the seller can join directly, and it publishes an order handoff event when the case needs operations follow-up.
+This example calls Infrai as plain REST from Python with a single `INFRAI_API_KEY`. Infrai gives you one key and one bill for every capability, reachable as a plain REST call from any language with no SDK. The workflow tracks a marketplace support chat: a buyer opens a listing chat, we decide if the seller can join directly, then emit an order handoff event when ops must follow up. Missed emits or duplicate publishes have paged us before, so treat the publish as idempotent.
 
 ## What the request does
 
@@ -22,12 +22,12 @@ Input fields:
 - `buyer_update_kind`
 - `buyer_message`
 
-Expected decision:
+Routing logic to verify in a postmortem if a handoff lands in the wrong queue:
 
 - if `seller_asset_status=ready`, route to `seller_direct`
 - otherwise, route to `ops_handoff`
 
-The response includes the chosen route, channel name, buyer realtime token, and the event payload that was published.
+Response carries the chosen route, channel name, buyer realtime token, and the event payload that was published. Check the payload once to avoid double side effects.
 
 ## Local check
 
@@ -38,12 +38,14 @@ export INFRAI_API_KEY=your_key_here
 pytest -q
 ```
 
-Deterministic test case:
+Deterministic test case (run it in CI so a bad deploy doesn't reach prod):
 
 - input: `seller_asset_status="missing"`, `buyer_update_kind="shipping_delay"`
 - expected result: route is `ops_handoff` and published event is `order.handoff.requested`
 
 ## Request example
+
+From our Go worker this is a plain HTTP post.
 
 ```bash
 curl -X POST http://127.0.0.1:8000/support-sessions \
@@ -85,7 +87,7 @@ Example response shape:
 
 ## One gotcha
 
-Parse the `{ok,data,error,metadata}` envelope before acting on HTTP status. The client in `marketplace_chat/infrai_client.py` does that, retries `429` with backoff, and keeps the calling code small.
+Parse the `{ok,data,error,metadata}` envelope before acting on HTTP status. A missed parse caused a duplicate delivery in last quarter's incident. The client in `marketplace_chat/infrai_client.py` does that, retries `429` with backoff, and keeps the calling code small. Make your consumer idempotent regardless.
 
 ## Production notes: Marketplace Support Chat Handoff
 
